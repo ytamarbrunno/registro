@@ -1,261 +1,158 @@
-let clientes = JSON.parse(localStorage.getItem("clientes")) || [];
-let boletos = JSON.parse(localStorage.getItem("boletos")) || [];
-let saldoTotal = parseFloat(localStorage.getItem("saldoTotal")) || 0;
-let entradas = parseFloat(localStorage.getItem("entradas")) || 0;
-let gastos = parseFloat(localStorage.getItem("gastos")) || 0;
-
-// Função para formatar valores de dinheiro
-function formatarValor(valor) {
-    // Verifica se o valor é um inteiro, se for, remove as casas decimais
-    return valor % 1 === 0 ? `R$ ${valor.toFixed(0)}` : `R$ ${valor.toFixed(2)}`;
-}
-
-// Função para adicionar um cliente
-function adicionarCliente() {
-    const nome = document.getElementById("nome").value;
-    const perfume = document.getElementById("perfume").value;
-    const valorTotal = parseFloat(document.getElementById("valorTotal").value);
-    const valorPago = parseFloat(document.getElementById("valorPago").value);
-
-    if (!nome || !perfume || isNaN(valorTotal) || isNaN(valorPago)) {
-        alert("Preencha todos os campos corretamente");
-        return;
-    }
-
-    // Calcular as entradas e gastos
-    entradas += valorPago; // A entrada é o valor pago pelo cliente
-    gastos += (valorTotal - valorPago); // O restante é considerado gasto
-
-    // Atualiza o saldo
-    saldoTotal = entradas - gastos;
-
-    const cliente = {
-        nome,
-        perfume,
-        valorTotal,
-        valorPago
-    };
-
-    clientes.push(cliente);
-    salvarDados();
-    atualizarListaClientes(clientes); // Atualiza a lista com todos os clientes
-    atualizarResumo();
-    limparCampos();
-}
-
-// Função para excluir um cliente
-function excluirCliente(nome) {
-    // Encontra o índice do cliente na lista
-    const index = clientes.findIndex(cliente => cliente.nome === nome);
-
-    if (index !== -1) {
-        // Remove o cliente do array
-        clientes.splice(index, 1);
-
-        // Atualiza os dados no localStorage
-        salvarDados();
-
-        // Recalcula o saldo, entradas e gastos
-        recalcularResumo();
-
-        // Atualiza a lista de clientes na interface
-        atualizarListaClientes(clientes);
-    }
-}
-
-// Função para adicionar um boleto
-function adicionarBoleto() {
-    const boletoDescricao = document.getElementById("boletoDescricao").value;
-    const boletoValor = parseFloat(document.getElementById("boleto").value);
-
-    if (!boletoDescricao || isNaN(boletoValor) || boletoValor <= 0) {
-        alert("Informe uma descrição e um valor válido para o boleto");
-        return;
-    }
-
-    // Adiciona o boleto à lista de boletos
-    const boleto = {
-        descricao: boletoDescricao,
-        valor: boletoValor
-    };
-    boletos.push(boleto);
-
-    // Soma o valor do boleto aos gastos
-    gastos += boletoValor;
-
-    // Atualiza o saldo
-    saldoTotal = entradas - gastos;
-
-    salvarDados();
-    atualizarListaBoletos();
-    atualizarResumo();
-}
-
-// Função para atualizar a lista de clientes
-function atualizarListaClientes(clientesParaExibir = clientes) {
-    const clientList = document.getElementById("clientList");
-    clientList.innerHTML = '';
-    clientesParaExibir.forEach(cliente => {
-        const clienteElement = document.createElement('div');
-        clienteElement.classList.add('client');
-        clienteElement.innerHTML = `
-            <strong>${cliente.nome}</strong> - Perfume: ${cliente.perfume} - Total: ${formatarValor(cliente.valorTotal)} - Pago: ${formatarValor(cliente.valorPago)}
-            <div class="progress-bar">
-                <div class="progress" style="width: ${(cliente.valorPago / cliente.valorTotal) * 100}%"></div>
-            </div>
-            <div class="update-section">
-                <input type="number" placeholder="Novo pagamento" id="novoPagamento-${cliente.nome}">
-                <button onclick="atualizarPagamento('${cliente.nome}')">Atualizar pagamento</button>
-            </div>
-            <button onclick="excluirCliente('${cliente.nome}')">Excluir</button>
-        `;
-        clientList.appendChild(clienteElement);
-    });
-}
-
-// Função para atualizar o pagamento de um cliente
-function atualizarPagamento(nome) {
-    const novoPagamento = parseFloat(document.getElementById(`novoPagamento-${nome}`).value);
-    const cliente = clientes.find(cliente => cliente.nome === nome);
-
-    if (isNaN(novoPagamento) || novoPagamento <= 0 || novoPagamento > cliente.valorTotal - cliente.valorPago) {
-        alert("Valor inválido para pagamento");
-        return;
-    }
-
-    cliente.valorPago += novoPagamento;
-    entradas += novoPagamento;
-    saldoTotal = entradas - gastos;
-    salvarDados();
-    atualizarListaClientes();
-    atualizarResumo();
-}
-
-// Função para atualizar a lista de boletos
-function atualizarListaBoletos() {
-    const boletoList = document.getElementById("boletoList");
-    boletoList.innerHTML = '';
-    boletos.forEach(boleto => {
-        const boletoElement = document.createElement('div');
-        boletoElement.classList.add('boleto');
-        boletoElement.innerHTML = `
-            <strong>${boleto.descricao}</strong> - ${formatarValor(boleto.valor)}
-        `;
-        boletoList.appendChild(boletoElement);
-    });
-}
-
-// Função para atualizar o resumo
-function atualizarResumo() {
-    document.getElementById("entradas").innerText = `Entradas: ${formatarValor(entradas)}`;
-    document.getElementById("gastos").innerText = `Gastos: ${formatarValor(gastos)}`;
-    document.getElementById("saldoTotal").innerText = `Saldo Total: ${formatarValor(saldoTotal)}`;
-}
-
-// Função para salvar os dados no localStorage
-function salvarDados() {
-    localStorage.setItem("clientes", JSON.stringify(clientes));
-    localStorage.setItem("boletos", JSON.stringify(boletos));
-    localStorage.setItem("saldoTotal", saldoTotal.toFixed(2));
-    localStorage.setItem("entradas", entradas.toFixed(2));
-    localStorage.setItem("gastos", gastos.toFixed(2));
-}
-
-// Função para limpar os campos do formulário
-function limparCampos() {
-    document.getElementById("nome").value = '';
-    document.getElementById("perfume").value = '';
-    document.getElementById("valorTotal").value = '';
-    document.getElementById("valorPago").value = '';
-    document.getElementById("boletoDescricao").value = '';
-    document.getElementById("boleto").value = '';
-}
-
-// Função para alternar entre as seções
-function toggleSection(section) {
-    const sections = ['clientes', 'boletos', 'resumo'];
-    sections.forEach(sec => {
-        document.getElementById(sec).classList.add('hidden');
-    });
-    document.getElementById(section).classList.remove('hidden');
-}
-
-// Funções para alternar entre as seções com os botões
-document.getElementById("btnClientes").addEventListener("click", function() {
-    toggleSection('clientes');
-});
-
-document.getElementById("btnBoletos").addEventListener("click", function() {
-    toggleSection('boletos');
-});
-
-document.getElementById("btnResumo").addEventListener("click", function() {
-    toggleSection('resumo');
-});
-
-// Inicializa com a seção de Resumo
-toggleSection('resumo');
-
-// Atualiza a lista de clientes e boletos ao carregar a página
-atualizarListaClientes();
-atualizarListaBoletos();
-atualizarResumo();
-
-// Função de pesquisa de clientes
-function pesquisarClientes() {
-    const pesquisa = document.getElementById("searchCliente").value.toLowerCase();
-    const clientesFiltrados = clientes.filter(cliente => cliente.nome.toLowerCase().includes(pesquisa));
-    atualizarListaClientes(clientesFiltrados);
-}
-
-// Função para resetar os valores salvos no localStorage
-function resetarValores() {
-    // Limpa todos os dados armazenados no localStorage
-    localStorage.removeItem("clientes");
-    localStorage.removeItem("boletos");
-    localStorage.removeItem("saldoTotal");
-    localStorage.removeItem("entradas");
-    localStorage.removeItem("gastos");
-
-    // Resetando as variáveis internas também
-    clientes = [];
-    boletos = [];
-    saldoTotal = 0;
-    entradas = 0;
-    gastos = 0;
-
-    // Atualiza a interface após o reset
-    atualizarResumo();
-    atualizarListaClientes();
-}
-
-// Função para recalcular o saldo, entradas e gastos
-function recalcularResumo() {
-    saldoTotal = 0;
-    entradas = 0;
-    gastos = 0;
-
-    // Percorre todos os clientes e recalcula os valores
-    clientes.forEach(cliente => {
-        saldoTotal += cliente.valorTotal;
-        entradas += cliente.valorPago;
-        gastos += (cliente.valorTotal - cliente.valorPago);
-    });
-
-    // Atualiza o saldo e os valores salvos
-    saldoTotal = entradas - gastos;
-    localStorage.setItem("saldoTotal", saldoTotal.toFixed(2));
-    localStorage.setItem("entradas", entradas.toFixed(2));
-    localStorage.setItem("gastos", gastos.toFixed(2));
-
-    atualizarResumo();
-}
-// Adiciona um ouvinte de evento para o botão de excluir boletos
-document.getElementById("excluirBoletos").addEventListener("click", function() {
-    // Exclui os boletos do localStorage
-    localStorage.removeItem('boletos');
-    
-    // Mostra uma mensagem para o usuário informando que os boletos foram excluídos
-    alert("Os boletos foram excluídos.");
-});
-
+// Configuração do Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyAm93CDQuHJplGRwJ1Lw39AnJBTe00CtJ8",
+    authDomain: "gestor-931ba.firebaseapp.com",
+    projectId: "gestor-931ba",
+    storageBucket: "gestor-931ba.firebasestorage.app",
+    messagingSenderId: "886496160480",
+    appId: "1:886496160480:web:d436fa33ba00331e273e85",
+    measurementId: "G-P1GLLDHF99"
+  };
+  
+  // Inicialize o Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  
+  // Função para mostrar a seção de clientes
+  function mostrarClientes() {
+      document.getElementById("clientes").classList.remove("hidden");
+      document.getElementById("boletos").classList.add("hidden");
+      document.getElementById("resumo").classList.add("hidden");
+  }
+  
+  // Função para mostrar a seção de boletos
+  function mostrarBoletos() {
+      document.getElementById("clientes").classList.add("hidden");
+      document.getElementById("boletos").classList.remove("hidden");
+      document.getElementById("resumo").classList.add("hidden");
+  }
+  
+  // Função para mostrar a seção de resumo
+  function mostrarResumo() {
+      document.getElementById("clientes").classList.add("hidden");
+      document.getElementById("boletos").classList.add("hidden");
+      document.getElementById("resumo").classList.remove("hidden");
+  }
+  
+  // Função para adicionar um cliente
+  async function adicionarCliente() {
+      const nome = document.getElementById("nome").value;
+      const perfume = document.getElementById("perfume").value;
+      const valorTotal = document.getElementById("valorTotal").value;
+      const valorPago = document.getElementById("valorPago").value;
+  
+      try {
+          await db.collection("clientes").add({
+              nome: nome,
+              perfume: perfume,
+              valorTotal: parseFloat(valorTotal),
+              valorPago: parseFloat(valorPago)
+          });
+          alert("Cliente adicionado com sucesso!");
+          listarClientes();  // Atualiza a lista de clientes
+      } catch (e) {
+          console.error("Erro ao adicionar cliente: ", e);
+      }
+  }
+  
+  // Função para listar os clientes
+  async function listarClientes() {
+      const querySnapshot = await db.collection("clientes").get();
+      const clientList = document.getElementById("clientList");
+      clientList.innerHTML = '';  // Limpa a lista antes de adicionar novos dados
+  
+      querySnapshot.forEach((doc) => {
+          const cliente = doc.data();
+          const div = document.createElement("div");
+          div.textContent = `Nome: ${cliente.nome}, Perfume: ${cliente.perfume}, Total: R$ ${cliente.valorTotal}, Pago: R$ ${cliente.valorPago}`;
+          clientList.appendChild(div);
+      });
+  }
+  
+  // Função para pesquisar clientes
+  async function pesquisarClientes() {
+      const queryText = document.getElementById("searchCliente").value;
+      const querySnapshot = await db.collection("clientes")
+          .where("nome", "==", queryText)
+          .get();
+  
+      const clientList = document.getElementById("clientList");
+      clientList.innerHTML = '';
+  
+      querySnapshot.forEach((doc) => {
+          const cliente = doc.data();
+          const div = document.createElement("div");
+          div.textContent = `Nome: ${cliente.nome}, Perfume: ${cliente.perfume}, Total: R$ ${cliente.valorTotal}, Pago: R$ ${cliente.valorPago}`;
+          clientList.appendChild(div);
+      });
+  }
+  
+  // Função para adicionar boleto
+  async function adicionarBoleto() {
+      const descricao = document.getElementById("boletoDescricao").value;
+      const valor = document.getElementById("boleto").value;
+  
+      try {
+          await db.collection("boletos").add({
+              descricao: descricao,
+              valor: parseFloat(valor)
+          });
+          alert("Boleto adicionado com sucesso!");
+          listarBoletos();  // Atualiza a lista de boletos
+      } catch (e) {
+          console.error("Erro ao adicionar boleto: ", e);
+      }
+  }
+  
+  // Função para listar boletos
+  async function listarBoletos() {
+      const querySnapshot = await db.collection("boletos").get();
+      const boletoList = document.getElementById("boletoList");
+      boletoList.innerHTML = '';  // Limpa a lista antes de adicionar novos dados
+  
+      querySnapshot.forEach((doc) => {
+          const boleto = doc.data();
+          const div = document.createElement("div");
+          div.textContent = `Descrição: ${boleto.descricao}, Valor: R$ ${boleto.valor}`;
+          boletoList.appendChild(div);
+      });
+  }
+  
+  // Função para excluir todos os boletos
+  async function excluirBoletos() {
+      const querySnapshot = await db.collection("boletos").get();
+      querySnapshot.forEach(async (doc) => {
+          await db.collection("boletos").doc(doc.id).delete();
+      });
+      alert("Todos os boletos foram excluídos.");
+      listarBoletos();  // Atualiza a lista de boletos após exclusão
+  }
+  
+  // Função para calcular o resumo
+  async function calcularResumo() {
+      const clientesSnapshot = await db.collection("clientes").get();
+      let entradas = 0;
+      let gastos = 0;
+  
+      // Calculando as entradas e gastos
+      clientesSnapshot.forEach((doc) => {
+          const cliente = doc.data();
+          entradas += cliente.valorTotal;
+          gastos += cliente.valorPago;
+      });
+  
+      const boletosSnapshot = await db.collection("boletos").get();
+      boletosSnapshot.forEach((doc) => {
+          const boleto = doc.data();
+          gastos += boleto.valor;
+      });
+  
+      // Atualizando os valores no HTML
+      document.getElementById("entradas").textContent = `R$ ${entradas.toFixed(2)}`;
+      document.getElementById("gastos").textContent = `R$ ${gastos.toFixed(2)}`;
+      document.getElementById("saldoTotal").textContent = `R$ ${(entradas - gastos).toFixed(2)}`;
+  }
+  
+  // Chama a função para calcular o resumo quando a página carregar
+  calcularResumo();
+  
