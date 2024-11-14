@@ -38,22 +38,23 @@ body {
   }
   
   .menu button:hover {
-    background-color: #ff66cc;
+    background-color: #ecb6da;
   }
   
   .resumo-container {
     display: flex;
+    text-align: center;
     justify-content: space-between;
     margin-bottom: 20px;
   }
   
   .resumo-box {
     background-color: #f9f9f9;
-    padding: 20px;
+    padding: 8px;
     border-radius: 8px;
     border: 1px solid #ddd;
     text-align: center;
-    width: 30%;
+    width: 25%;
     background-color: #ff80bf;
     color: white;
   }
